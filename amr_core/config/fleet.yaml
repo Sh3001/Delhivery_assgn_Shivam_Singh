@@ -34,20 +34,22 @@ fleet:
   # the planner's costmap on purpose, so Nav2 will NOT route around the other
   # robot - only traffic control and the safety halt separate them, so the
   # two must not be aimed across each other. Rule: each robot takes the lane
-  # on the side its goal is on. amr1 works the rack aisle at (-23, -6), so it
-  # takes the SOUTH lane and turns away immediately; amr2 runs east to
-  # packing_bay_4 (1.0, 0.0) from the NORTH lane. Aim them across each other
-  # and they collide - measured amr2 climbing onto amr1, 0.39 m apart at
-  # z=0.25, 323 safety halts, both goals lost.
+  # on the side its goal is on. amr2 drops straight south into the tight
+  # rack slot at (-24.5, -4.0), so it holds the SOUTH lane; amr1 runs east to
+  # packing_bay_4 (1.0, 0.0) over the ramp, so it takes the NORTH lane and
+  # stays north of amr2 as it turns away. Aim them across each other and they
+  # collide - measured amr2 climbing onto amr1, 0.39 m apart at z=0.25, 323
+  # safety halts, both goals lost. Re-check this pairing whenever the goals
+  # change sides.
   robots:
     - name: "amr1"
       model: "heavy_tugger"
       x: -24.0
-      y: -1.25
+      y: 1.25
       yaw: 0.0
 
     - name: "amr2"
       model: "light_scout"
       x: -24.0
-      y: 1.25
+      y: -1.25
       yaw: 0.0

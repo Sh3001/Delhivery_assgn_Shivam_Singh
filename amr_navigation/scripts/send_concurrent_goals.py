@@ -171,12 +171,12 @@ def main(args=None):
 
     dispatchers = [
         RobotGoalDispatcher(
-            node, "amr1", "Rack Aisle",
-            rack_aisle["x"], rack_aisle["y"], rack_aisle["yaw"],
+            node, "amr1", "Packing Bay 4",
+            packing_bay_4["x"], packing_bay_4["y"], packing_bay_4["yaw"],
         ),
         RobotGoalDispatcher(
-            node, "amr2", "Packing Bay 4",
-            packing_bay_4["x"], packing_bay_4["y"], packing_bay_4["yaw"],
+            node, "amr2", "Rack Aisle",
+            rack_aisle["x"], rack_aisle["y"], rack_aisle["yaw"],
         ),
     ]
 

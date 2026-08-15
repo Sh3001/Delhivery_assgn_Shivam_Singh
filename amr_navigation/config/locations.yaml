@@ -15,17 +15,29 @@ locations:
     description: "West block, ground floor - no ramp involved on any route"
 
   rack_aisle:
-    x: -23.0
-    y: -6.0
-    yaw: 0.0
+    x: -15.5
+    y: -4.0
+    yaw: 1.5708
     description: >-
-      West block picking position, in the aisle between two pallet racks and
-      alongside them. The x = -23 column carries racks at y = -4 and y = -8;
-      each pallet_rack is 1.4 x 0.9 m, so their faces sit at y = -4.45 and
-      y = -7.55 and the aisle between is 3.1 m wide. y = -6.0 is its centre
-      line, leaving 1.55 m to the rack on either side against the 0.95 m a
-      goal needs (robot_radius 0.35 + inflation 0.55). Open east-west, and
-      yaw 0 points the robot along the aisle rather than into a rack.
+      The tight one - squarely between two pallet racks, for amr2 only.
+      The y = -4 row carries racks at x = -17 and x = -14; each pallet_rack
+      is 1.4 m long in x, so their faces sit at x = -16.3 and x = -14.7 and
+      the slot between them is just 1.60 m wide. x = -15.5 is its centre,
+      0.80 m off each rack. This is the far pair - the same 1.60 m slot
+      exists at x = -24.5 between the x = -26 and x = -23 racks, but that one
+      sits 2.8 m from amr2's spawn and barely counts as a transit.
+      .
+      Sized for the light_scout and nothing bigger. 0.80 m clears the 0.55 m
+      inflation so the goal cell costs 0; it clears amr2's 0.32 m
+      circumscribed radius so it can still turn on the spot; and a rack
+      0.80 m to the side only enters the +/-40 deg safety cone at 1.24 m,
+      past the 0.50 m that would halt it. The planner threads a 0.50 m
+      zero-cost corridor (1.60 - 2 x 0.55).
+      .
+      yaw 90 deg faces the robot ALONG the slot. Facing across it would put
+      a rack 0.80 m dead ahead, and pointing a forward safety cone straight
+      into a rack is how amr1 wedged itself in the 3.1 m aisle at y = -6.
+      Do not send amr1 here: its 0.65 m cone and 0.35 m radius do not fit.
 
   ramp_side:
     x: -5.0
