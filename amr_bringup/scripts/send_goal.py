@@ -1,17 +1,3 @@
-#!/usr/bin/env python3
-# Copyright 2026 Delhivery RSE Assignment
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 """Give the fleet goals, and report whether they were reached."""
 
 import sys
@@ -214,11 +200,6 @@ def main():
             print(f"error: {exc}")
             return 2
 
-    # 600, not 300. amr1 runs a 0.12 m / 0.12 rad StoppedGoalChecker, so it
-    # creeps and settles at the end instead of snapping to success the moment
-    # it clips the tolerance. On a 20 m route that final settle can outlast a
-    # 300 s budget even though the robot is already parked inside tolerance -
-    # measured 0.111 m from ramp_side when the old budget expired.
     timeout = 600.0
     for arg in sys.argv[1:]:
         if arg.startswith("--timeout="):
