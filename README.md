@@ -130,7 +130,7 @@ system. The per-task launches below exist so each assignment task can be run
 and judged on its own. Every terminal needs `source install/setup.bash`, and
 every launch should be preceded by `ros2 run amr_bringup stop_stack.py`.
 
-### Task 1 — Simulation environment
+### Task 1 - Simulation environment
 
 ```bash
 ros2 launch amr_bringup warehouse_fleet.launch.py
@@ -138,19 +138,19 @@ ros2 launch amr_bringup warehouse_fleet.launch.py
 
 Flags: `headless:=true` (server only), `obstacles:=false` (park the pedestrians).
 
-### Task 2 — Cooperative SLAM, map fusion, ramp-aware navigation
+### Task 2 - Cooperative SLAM, map fusion, ramp-aware navigation
 
 ```bash
 ros2 launch amr_bringup task2.launch.py rviz:=true goals:=true perfect_localization:=true
 ```
 
-### Task 3 — Motion smoothing, conflict handling, safety override
+### Task 3 - Motion smoothing, conflict handling, safety override
 
 ```bash
 ros2 launch amr_bringup task3.launch.py rviz:=true goals:=true perfect_localization:=true
 ```
 
-### Task 4 — Sensor validation and fleet scalability
+### Task 4 - Sensor validation and fleet scalability
 
 ```bash
 python3 demos/scenario_f_sensor_bsp_and_scaling.py --offline   # 10-robot scaling, no stack
@@ -166,7 +166,7 @@ ros2 launch amr_bringup fleet_10_demo.launch.py
 ros2 node list        # /amr1/sensor_bsp_node … /amr10/sensor_bsp_node
 ```
 
-### Task 5 — Build, dependencies, code quality
+### Task 5 - Build, dependencies, code quality
 
 ```bash
 cd ~/delhivery_assgn/ros2_ws
