@@ -19,12 +19,33 @@ import time
 
 import rclpy
 from amr_core import load_fleet
+from lifecycle_msgs.msg import State
+from lifecycle_msgs.srv import GetState
 from nav2_msgs.action import NavigateToPose
 from rclpy.action import ActionClient
 from rclpy.node import Node
 
 WAIT_TOTAL_SEC = 180.0
 POLL_SEC = 2.0
+
+
+def _bt_navigator_active(node, client, timeout_sec=1.0):
+    """True only once this robot's bt_navigator has reached ACTIVE.
+
+    wait_for_server() is not enough on its own. bt_navigator creates the
+    navigate_to_pose server in on_configure, so the server exists - and the
+    client reports it available - while the node is still CONFIGURING and
+    still rejecting every goal. amr2 launches ROBOT_STAGGER_SEC behind amr1,
+    so it is reliably the one that has not activated yet when the banner
+    prints, and a goal sent on the banner comes straight back as rejected.
+    """
+    if not client.service_is_ready():
+        return False
+    future = client.call_async(GetState.Request())
+    rclpy.spin_until_future_complete(node, future, timeout_sec=timeout_sec)
+    if not future.done() or future.result() is None:
+        return False
+    return future.result().current_state.id == State.PRIMARY_STATE_ACTIVE
 
 
 def main():
@@ -35,6 +56,10 @@ def main():
         name: ActionClient(node, NavigateToPose, f"/{name}/navigate_to_pose")
         for name in robots
     }
+    state_clients = {
+        name: node.create_client(GetState, f"/{name}/bt_navigator/get_state")
+        for name in robots
+    }
 
     ready = set()
     deadline = time.time() + WAIT_TOTAL_SEC
@@ -42,7 +67,9 @@ def main():
         for name, client in clients.items():
             if name in ready:
                 continue
-            if client.wait_for_server(timeout_sec=POLL_SEC):
+            # Both conditions: the server exists AND bt_navigator is ACTIVE.
+            if (client.wait_for_server(timeout_sec=POLL_SEC)
+                    and _bt_navigator_active(node, state_clients[name])):
                 ready.add(name)
                 node.get_logger().info(f"[fleet] {name} ready")
         rclpy.spin_once(node, timeout_sec=0.1)
@@ -65,7 +92,7 @@ def main():
         missing = sorted(set(robots) - ready)
         for line in [
             bar,
-            f"[fleet] NOT READY - no navigate_to_pose for: {', '.join(missing)}",
+            f"[fleet] NOT READY - bt_navigator not ACTIVE for: {', '.join(missing)}",
             "[fleet] That robot's Nav2 did not activate. This is the known",
             "[fleet] intermittent bringup stall - stop and relaunch:",
             "[fleet]   ros2 run amr_bringup stop_stack.py",

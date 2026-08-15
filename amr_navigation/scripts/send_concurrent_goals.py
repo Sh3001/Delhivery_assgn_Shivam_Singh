@@ -23,6 +23,8 @@ import yaml
 from action_msgs.msg import GoalStatus
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseStamped
+from lifecycle_msgs.msg import State
+from lifecycle_msgs.srv import GetState
 from nav2_msgs.action import NavigateToPose
 from rclpy.action import ActionClient
 from rclpy.node import Node
@@ -64,12 +66,43 @@ class RobotGoalDispatcher:
         self._goal_pose.pose.orientation.z = qz
         self._goal_pose.pose.orientation.w = qw
 
+    def _wait_until_active(self, timeout_sec=120.0):
+        """Block until this robot's bt_navigator is ACTIVE.
+
+        wait_for_server() is not sufficient. bt_navigator creates the
+        navigate_to_pose server in on_configure, so it is discoverable while
+        the node is still CONFIGURING and rejecting every goal. amr2 is
+        launched ROBOT_STAGGER_SEC behind amr1, so it is reliably the robot
+        that is not yet ACTIVE when goals go out, and its goal was being
+        burned against the retry budget before it could ever be accepted.
+        """
+        cli = self._node.create_client(
+            GetState, f"/{self._robot_name}/bt_navigator/get_state")
+        deadline = time.monotonic() + timeout_sec
+        while time.monotonic() < deadline and rclpy.ok():
+            if cli.service_is_ready():
+                future = cli.call_async(GetState.Request())
+                rclpy.spin_until_future_complete(
+                    self._node, future, timeout_sec=2.0)
+                result = future.result() if future.done() else None
+                if (result is not None
+                        and result.current_state.id == State.PRIMARY_STATE_ACTIVE):
+                    return True
+            rclpy.spin_once(self._node, timeout_sec=0.2)
+        self._node.get_logger().error(
+            f"[{self._robot_name}] bt_navigator never reached ACTIVE after "
+            f"{timeout_sec:.0f}s")
+        return False
+
     def dispatch(self):
         """Send the goal without blocking."""
         self._node.get_logger().info(
             f"[{self._robot_name}] waiting for navigate_to_pose action server..."
         )
         self._client.wait_for_server()
+        if not self._wait_until_active():
+            self.done = True
+            return
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = self._goal_pose
         self._node.get_logger().info(
@@ -133,13 +166,13 @@ def main(args=None):
     with open(locations_path) as f:
         locations = yaml.safe_load(f)["locations"]
 
-    heavy_storage = locations["heavy_storage"]
+    rack_aisle = locations["rack_aisle"]
     packing_bay_4 = locations["packing_bay_4"]
 
     dispatchers = [
         RobotGoalDispatcher(
-            node, "amr1", "Heavy Storage",
-            heavy_storage["x"], heavy_storage["y"], heavy_storage["yaw"],
+            node, "amr1", "Rack Aisle",
+            rack_aisle["x"], rack_aisle["y"], rack_aisle["yaw"],
         ),
         RobotGoalDispatcher(
             node, "amr2", "Packing Bay 4",

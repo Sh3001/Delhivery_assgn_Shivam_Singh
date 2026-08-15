@@ -1,9 +1,44 @@
 locations:
   heavy_storage:
-    x: -19.0
-    y: -6.0
+    # Verified against a FULLY EXPLORED costmap: cost 0 with 1.8 m of clear
+    # space in every direction. A goal needs robot_radius (0.35) + inflation
+    # (0.55) = 0.95 m before the robot can finish, and clearance must be
+    # measured once the area is actually mapped.
+    #
+    # The previous point (-19.0, -6.0) measured 1.3 m on a partly-built map
+    # and only 0.2 m once explored. AMR-1 drove to within 0.45 m of it, its
+    # own cell went lethal, DWB stopped emitting commands and the goal
+    # aborted every time - the robot was fine, the goal was not reachable.
+    x: -20.5
+    y: 1.5
     yaw: 0.0
     description: "West block, ground floor - no ramp involved on any route"
+
+  rack_aisle:
+    x: -23.0
+    y: -6.0
+    yaw: 0.0
+    description: >-
+      West block picking position, in the aisle between two pallet racks and
+      alongside them. The x = -23 column carries racks at y = -4 and y = -8;
+      each pallet_rack is 1.4 x 0.9 m, so their faces sit at y = -4.45 and
+      y = -7.55 and the aisle between is 3.1 m wide. y = -6.0 is its centre
+      line, leaving 1.55 m to the rack on either side against the 0.95 m a
+      goal needs (robot_radius 0.35 + inflation 0.55). Open east-west, and
+      yaw 0 points the robot along the aisle rather than into a rack.
+
+  ramp_side:
+    x: -5.0
+    y: 4.5
+    yaw: 0.0
+    description: >-
+      Ground floor alongside ramp_up, level with the middle of the ramp
+      (ramp_up spans x -10..0, y -2..2, centred at x = -5). North of the
+      kerb, not on the incline: ramp_up_kerb_n sits at y = 1.94 and the
+      costmap blocks it out to y = 3.2, so y = 4.5 leaves 1.3 m against the
+      0.95 m a goal needs (robot_radius 0.35 + inflation 0.55). Nothing
+      static is near it - the closest fixed structure is mezz_rail_wn at
+      x = 0.06, five metres east.
 
   packing_bay_4:
     x: 1.0

@@ -45,8 +45,6 @@ class SafetyOverrideNode(Node):
             release_hysteresis=float(self.get_parameter("release_hysteresis").value))
 
         self._cmd = Twist()
-        self._turn_clear_radius = float(
-            getattr(self._robot, "footprint_radius", 0.5))
         self._speed = 0.0
         self._min_range = float("inf")
         self._last_scan_time = None
@@ -98,9 +96,21 @@ class SafetyOverrideNode(Node):
 
         out = self._cmd
         if decision.halt:
+            # Translation is refused, rotation is not. Turning in place is the
+            # only way out of a halt: the state machine needs min_range to
+            # reach d_safe + hysteresis before it releases, and a robot that
+            # may not turn cannot change what is in its forward sector, so a
+            # close obstacle used to wedge it permanently - it sat at 0.30 m
+            # emitting "holding" until the goal timed out.
+            #
+            # Safe because the sweep radius is smaller than anything the scan
+            # can report. Returns below inscribed_radius + 0.05 are discarded
+            # as self-returns, so the nearest obstacle the monitor can see at
+            # the edge of the forward sector is 0.51 m from base centre on
+            # amr1 (0.40 m on amr2) against a circumscribed radius of 0.43 m
+            # (0.32 m) - the body never sweeps into it.
             out = Twist()
-            if decision.min_range > self._turn_clear_radius:
-                out.angular.z = self._cmd.angular.z
+            out.angular.z = self._cmd.angular.z
         self._pub.publish(out)
         self._status_pub.publish(Bool(data=decision.halt))
 

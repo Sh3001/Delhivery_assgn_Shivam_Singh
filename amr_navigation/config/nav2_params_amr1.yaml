@@ -77,13 +77,31 @@ controller_server:
     controller_plugins: ["FollowPath"]
 
     progress_checker:
-      plugin: "nav2_controller::SimpleProgressChecker"
+      # PoseProgressChecker, not SimpleProgressChecker: the simple one counts
+      # only translation, so the final rotate-to-goal phase reads as being
+      # stuck. amr1 arrives at the goal, starts turning to the goal yaw,
+      # translates nothing for 30 s and gets aborted 3.6 cm short. Counting
+      # rotation as progress is what lets it finish.
+      plugin: "nav2_controller::PoseProgressChecker"
       required_movement_radius: 0.5
+      required_movement_angle: 0.25
       movement_time_allowance: 30.0
     goal_checker:
-      plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.3
-      yaw_goal_tolerance: 0.3
+      # StoppedGoalChecker, not SimpleGoalChecker. The simple one succeeds the
+      # instant the pose is inside tolerance - which happens mid-rotation, so
+      # the controller stops commanding and amr1 coasts on its own momentum.
+      # Measured: success declared, robot settled 0.15 m and 70 deg past the
+      # goal. Requiring it to be stopped inside tolerance is what makes the
+      # reported pose the pose it actually parks at.
+      plugin: "nav2_controller::StoppedGoalChecker"
+      trans_stopped_velocity: 0.05
+      rot_stopped_velocity: 0.05
+      # Tightened from 0.3/0.3. At 0.3 m amr1 was stopping 0.22 m off the pad,
+      # which is inside tolerance but too loose to dock against. The final
+      # rotate-in-place needed to reach this is only affordable because the
+      # progress checker above counts rotation as progress.
+      xy_goal_tolerance: 0.12
+      yaw_goal_tolerance: 0.12
       stateful: True
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
@@ -111,7 +129,11 @@ controller_server:
       transform_tolerance: 0.2
       trans_stopped_velocity: 0.2
       short_circuit_trajectory_evaluation: True
-      xy_goal_tolerance: 0.25
+      # Must match the goal checker's xy_goal_tolerance. This is the radius at
+      # which RotateToGoal takes over and starts penalising translation; if it
+      # is the wider value the robot stops driving at 0.25 m and spins there,
+      # never closing the last 0.13 m the goal checker is waiting for.
+      xy_goal_tolerance: 0.12
       stateful: True
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
       BaseObstacle.scale: 0.02

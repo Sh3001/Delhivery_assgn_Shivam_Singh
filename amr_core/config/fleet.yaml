@@ -22,15 +22,32 @@ fleet:
     slow_speed_scale: 0.35
     directive_stale_sec: 1.0
 
+  # Side by side in the open west floor: same x, 2.5 m apart in y, both
+  # facing +x. Abreast rather than nose-to-tail is what matters - a peer
+  # sitting at 90 deg is outside the +/-40 deg forward safety cone, so
+  # neither robot brakes for the other or maps it as structure. The old pair
+  # (-18, 0) and (-14, 0) put amr2 4 m directly AHEAD of amr1, which is how
+  # each robot ended up baking the other into its map as a permanent wall.
+  # Clear of the movers: ped_1 (-20, 0), ped_2 (-20, 6), robot_1 (-16, -8),
+  # and 4 m off wall_west at x = -28.15.
+  # Lane assignment matters as much as the spacing. Peers are filtered out of
+  # the planner's costmap on purpose, so Nav2 will NOT route around the other
+  # robot - only traffic control and the safety halt separate them, so the
+  # two must not be aimed across each other. Rule: each robot takes the lane
+  # on the side its goal is on. amr1 works the rack aisle at (-23, -6), so it
+  # takes the SOUTH lane and turns away immediately; amr2 runs east to
+  # packing_bay_4 (1.0, 0.0) from the NORTH lane. Aim them across each other
+  # and they collide - measured amr2 climbing onto amr1, 0.39 m apart at
+  # z=0.25, 323 safety halts, both goals lost.
   robots:
     - name: "amr1"
       model: "heavy_tugger"
-      x: -18.0
-      y: 0.0
+      x: -24.0
+      y: -1.25
       yaw: 0.0
 
     - name: "amr2"
       model: "light_scout"
-      x: -14.0
-      y: 0.0
+      x: -24.0
+      y: 1.25
       yaw: 0.0

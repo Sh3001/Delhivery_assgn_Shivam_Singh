@@ -27,6 +27,7 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 
 RETRY_LIMIT = 12
+ABORT_RETRY_LIMIT = 4
 RETRY_DELAY_SEC = 5.0
 PROGRESS_PERIOD_SEC = 5.0
 
@@ -65,6 +66,7 @@ class GoalRunner(Node):
         self.nav_clients = {}
         self.results = {}
         self.retries = {robot: 0 for robot in assignments}
+        self.abort_retries = {robot: 0 for robot in assignments}
         for robot in assignments:
             self.nav_clients[robot] = ActionClient(
                 self, NavigateToPose, f"/{robot}/navigate_to_pose")
@@ -153,6 +155,25 @@ class GoalRunner(Node):
                         GoalStatus.STATUS_ABORTED: "ABORTED",
                         GoalStatus.STATUS_CANCELED: "CANCELLED",
                     }.get(status, f"status={status}")
+
+                    # Nav2 aborts once its recovery budget is spent, but the
+                    # costmap has usually changed by then - a moving obstacle
+                    # has passed, or a recovery nudged the robot out of
+                    # inflated space. Re-planning from the new state normally
+                    # succeeds, so an abort is retried rather than reported.
+                    if (name != "REACHED"
+                            and self.abort_retries[robot] < ABORT_RETRY_LIMIT
+                            and time.time() < deadline - 20):
+                        self.abort_retries[robot] += 1
+                        print(f"  [{robot}] {name} - replanning "
+                              f"({self.abort_retries[robot]}/{ABORT_RETRY_LIMIT})")
+                        del pending[robot]
+                        self.retries[robot] = 0
+                        self.clear_costmaps(robot)
+                        self.dispatch(robot)
+                        if not isinstance(self.results[robot], str):
+                            pending[robot] = self.results[robot]
+                        continue
                     print(f"  [{robot}] {name}  "
                           f"({time.time() - (deadline - timeout_sec):.0f}s)")
                     self.results[robot] = name
@@ -193,7 +214,12 @@ def main():
             print(f"error: {exc}")
             return 2
 
-    timeout = 300.0
+    # 600, not 300. amr1 runs a 0.12 m / 0.12 rad StoppedGoalChecker, so it
+    # creeps and settles at the end instead of snapping to success the moment
+    # it clips the tolerance. On a 20 m route that final settle can outlast a
+    # 300 s budget even though the robot is already parked inside tolerance -
+    # measured 0.111 m from ramp_side when the old budget expired.
+    timeout = 600.0
     for arg in sys.argv[1:]:
         if arg.startswith("--timeout="):
             timeout = float(arg.split("=", 1)[1])
