@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="carton_box">
+    <static>true</static>
+    <link name="link">
+      <collision name="collision">
+        <geometry><box><size>0.3 0.25 0.25</size></box></geometry>
+      </collision>
+      <visual name="box">
+        <geometry><box><size>0.3 0.25 0.25</size></box></geometry>
+        <material>
+          <ambient>0.62 0.47 0.32 1</ambient>
+          <diffuse>0.68 0.52 0.35 1</diffuse>
+          <specular>0.05 0.05 0.05 1</specular>
+        </material>
+      </visual>
+      <!-- thin darker strip standing in for packing tape, so the carton
+           reads as a taped box rather than a flat-shaded cube. Y-size is
+           deliberately less than the box's own 0.25 (not equal to it) so
+           the tape's side faces sit strictly inside the box's, not
+           exactly coincident with them - the same touching-boundary
+           Z-fighting risk fixed elsewhere, just found here too. -->
+      <visual name="tape">
+        <pose>0 0 0.001 0 0 0</pose>
+        <geometry><box><size>0.06 0.24 0.252</size></box></geometry>
+        <material>
+          <ambient>0.42 0.3 0.18 1</ambient>
+          <diffuse>0.45 0.32 0.2 1</diffuse>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

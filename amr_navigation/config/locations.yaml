@@ -1,0 +1,50 @@
+locations:
+  heavy_storage:
+    x: -19.0
+    y: -6.0
+    yaw: 0.0
+    description: "West block, ground floor - no ramp involved on any route"
+
+  packing_bay_4:
+    x: 1.0
+    y: 0.0
+    yaw: 0.0
+
+  packing_bay_4_farside:
+    x: 22.0
+    y: 0.0
+    yaw: 0.0
+    description: >-
+      East block, ground floor. Reachable EITHER over the bridge (~36 m, 20 m
+      of it on ramps) OR around it along the flat bypass aisles (~52 m). This
+      is the location that makes the ramp cost function observable: a correct
+      cost takes the longer flat route.
+  mezzanine_dock:
+    x: 4.0
+    y: 0.0
+    yaw: 0.0
+    description: >-
+      On the elevated deck (z=1.0), reachable ONLY by ramp - the control case
+      proving the cost function still climbs when it has to.
+
+  platform_east:
+    x: 5.0
+    y: 0.5
+    yaw: 0.0
+    description: >-
+      On the mezzanine deck (z=1.0), east end. Reachable only by climbing
+      ramp_up, so a goal here forces ramp traversal. Verified against the live
+      inflated costmap: cost 16 with 2.5 m clearance. Sits in the deck's
+      central band (|y| < 1), clear of the ped_4 and robot_4 patrol lanes -
+      a robot parked inside a patrol lane gets driven into by a patroller
+      that has no collision avoidance of its own.
+
+  platform_west:
+    x: 2.0
+    y: -0.8
+    yaw: 0.0
+    description: >-
+      On the mezzanine deck (z=1.0), just past the top of ramp_up. Same
+      reasoning as platform_east: 2.1 m clearance, inside the central band.
+      3.3 m from platform_east, so both robots can hold station on the deck
+      without their footprints interacting.

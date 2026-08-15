@@ -1,0 +1,36 @@
+
+fleet:
+  model_library: "robot_models.yaml"
+  global_frame: "map"
+
+  map:
+    resolution: 0.1
+    x_min: -30.0
+    x_max: 28.0
+    y_min: -18.0
+    y_max: 18.0
+
+  ramps:
+    - {name: "ramp_up",   x_min: -10.0, y_min: -2.0, x_max: 0.0,  y_max: 2.0}
+    - {name: "ramp_down", x_min: 8.0,   y_min: -2.0, x_max: 18.0, y_max: 2.0}
+
+  policy:
+    horizon_seconds: 4.0
+    sample_period: 0.2
+    conflict_margin: 0.35
+    clear_margin: 1.0
+    slow_speed_scale: 0.35
+    directive_stale_sec: 1.0
+
+  robots:
+    - name: "amr1"
+      model: "heavy_tugger"
+      x: -18.0
+      y: 0.0
+      yaw: 0.0
+
+    - name: "amr2"
+      model: "light_scout"
+      x: -14.0
+      y: 0.0
+      yaw: 0.0

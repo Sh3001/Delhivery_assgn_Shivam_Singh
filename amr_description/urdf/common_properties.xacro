@@ -1,0 +1,263 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <material name="amr_orange"><color rgba="0.95 0.45 0.05 1.0"/></material>
+  <material name="amr_blue"><color rgba="0.1 0.35 0.85 1.0"/></material>
+  <material name="amr_dark"><color rgba="0.15 0.15 0.15 1.0"/></material>
+  <material name="amr_grey"><color rgba="0.6 0.6 0.6 1.0"/></material>
+  <material name="amr_steel"><color rgba="0.72 0.74 0.76 1.0"/></material>
+  <material name="amr_amber"><color rgba="1.0 0.65 0.0 1.0"/></material>
+  <material name="amr_cyan"><color rgba="0.1 0.9 0.95 1.0"/></material>
+
+  <xacro:macro name="box_inertia" params="mass x y z">
+    <inertia
+      ixx="${mass / 12.0 * (y*y + z*z)}" ixy="0.0" ixz="0.0"
+      iyy="${mass / 12.0 * (x*x + z*z)}" iyz="0.0"
+      izz="${mass / 12.0 * (x*x + y*y)}"/>
+  </xacro:macro>
+
+  <xacro:macro name="cylinder_inertia" params="mass r h">
+    <inertia
+      ixx="${mass / 12.0 * (3*r*r + h*h)}" ixy="0.0" ixz="0.0"
+      iyy="${mass / 12.0 * (3*r*r + h*h)}" iyz="0.0"
+      izz="${mass / 2.0 * r * r}"/>
+  </xacro:macro>
+
+  <!-- Differential-drive wheel: cylinder rolling about its own Y axis -->
+  <xacro:macro name="drive_wheel" params="prefix parent_link x_off y_off wheel_radius wheel_width wheel_mass material_name">
+    <link name="${prefix}_wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+        <material name="${material_name}"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+      </collision>
+      <inertial>
+        <mass value="${wheel_mass}"/>
+        <xacro:cylinder_inertia mass="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}"/>
+      </inertial>
+    </link>
+
+    <joint name="${prefix}_wheel_joint" type="continuous">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}_wheel_link"/>
+      <origin xyz="${x_off} ${y_off} 0" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <dynamics damping="0.1" friction="0.05"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- Free-spinning idler wheel: same size/shape as a drive wheel (the
+       reference AGV uses 4 uniform wheels, not casters), but unactuated
+       and low-friction so it doesn't fight the driven axle in a turn. -->
+  <xacro:macro name="idler_wheel" params="prefix parent_link x_off y_off wheel_radius wheel_width wheel_mass material_name">
+    <link name="${prefix}_wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+        <material name="${material_name}"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+      </collision>
+      <inertial>
+        <mass value="${wheel_mass}"/>
+        <xacro:cylinder_inertia mass="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_wheel_joint" type="continuous">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}_wheel_link"/>
+      <origin xyz="${x_off} ${y_off} 0" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <dynamics damping="0.05" friction="0.02"/>
+    </joint>
+    <gazebo reference="${prefix}_wheel_link">
+      <mu1>0.05</mu1>
+      <mu2>0.05</mu2>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="wheel_arm" params="prefix parent_link x_off side inner_mag outer_mag material_name:=amr_dark thickness:=0.10 height:=0.09">
+    <link name="${prefix}_arm_link">
+      <visual>
+        <origin xyz="0 ${side*(inner_mag+outer_mag)/2.0} 0" rpy="0 0 0"/>
+        <geometry><box size="${thickness} ${outer_mag-inner_mag} ${height}"/></geometry>
+        <material name="${material_name}"/>
+      </visual>
+      <inertial>
+        <mass value="0.15"/>
+        <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_arm_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}_arm_link"/>
+      <origin xyz="${x_off} 0 0" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- 2D planar LiDAR, GPU-accelerated, used for local obstacle detection and SLAM -->
+  <xacro:macro name="planar_lidar" params="parent_link x_off y_off z_off topic frame_id min_range max_range samples:=720 update_rate:=10">
+    <link name="${frame_id}">
+      <visual>
+        <geometry><cylinder radius="0.035" length="0.04"/></geometry>
+        <material name="amr_dark"/>
+      </visual>
+      <collision>
+        <geometry><cylinder radius="0.035" length="0.04"/></geometry>
+      </collision>
+      <inertial>
+        <mass value="0.15"/>
+        <inertia ixx="1e-5" ixy="0" ixz="0" iyy="1e-5" iyz="0" izz="1e-5"/>
+      </inertial>
+    </link>
+    <joint name="${frame_id}_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${frame_id}"/>
+      <origin xyz="${x_off} ${y_off} ${z_off}" rpy="0 0 0"/>
+    </joint>
+
+    <gazebo reference="${frame_id}">
+      <sensor name="${frame_id}_sensor" type="gpu_lidar">
+        <topic>${topic}</topic>
+        <update_rate>${update_rate}</update_rate>
+        <always_on>true</always_on>
+        <visualize>false</visualize>
+        <lidar>
+          <scan>
+            <horizontal>
+              <samples>${samples}</samples>
+              <resolution>1</resolution>
+              <min_angle>-3.14159</min_angle>
+              <max_angle>3.14159</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>${min_range}</min>
+            <max>${max_range}</max>
+            <resolution>0.01</resolution>
+          </range>
+        </lidar>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- IMU: consumed by the BSP validation routine (angular-velocity plausibility check) -->
+  <xacro:macro name="imu_sensor" params="parent_link topic frame_id update_rate:=100">
+    <link name="${frame_id}">
+      <inertial>
+        <mass value="0.05"/>
+        <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+      </inertial>
+    </link>
+    <joint name="${frame_id}_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${frame_id}"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <gazebo reference="${frame_id}">
+      <sensor name="${frame_id}_sensor" type="imu">
+        <topic>${topic}</topic>
+        <update_rate>${update_rate}</update_rate>
+        <always_on>true</always_on>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- ============================================================
+       Role-specific superstructure pieces (visual + light collision).
+       AMR-1 (heavy tugger) uses a raised payload deck; AMR-2 (scout) uses the
+       wedge nose/LED bar. All fixed-jointed to base_link so they add
+       negligible but non-zero inertia (avoids zero-mass links).
+       ============================================================ -->
+
+  <xacro:macro name="beacon_light" params="parent_link x_off y_off z_off material_name:=amr_amber">
+    <link name="${parent_link}_beacon_link">
+      <visual>
+        <geometry><sphere radius="0.045"/></geometry>
+        <material name="${material_name}"/>
+      </visual>
+      <inertial>
+        <mass value="0.02"/>
+        <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+      </inertial>
+    </link>
+    <joint name="${parent_link}_beacon_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${parent_link}_beacon_link"/>
+      <origin xyz="${x_off} ${y_off} ${z_off}" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- Raised payload deck: visual interface where a pallet/cart would sit -->
+  <xacro:macro name="payload_deck" params="parent_link length width z_off material_name:=amr_dark">
+    <link name="${parent_link}_deck_link">
+      <visual>
+        <geometry><box size="${length} ${width} 0.04"/></geometry>
+        <material name="${material_name}"/>
+      </visual>
+      <collision>
+        <geometry><box size="${length} ${width} 0.04"/></geometry>
+      </collision>
+      <inertial>
+        <mass value="1.0"/>
+        <xacro:box_inertia mass="1.0" x="${length}" y="${width}" z="0.04"/>
+      </inertial>
+    </link>
+    <joint name="${parent_link}_deck_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${parent_link}_deck_link"/>
+      <origin xyz="0 0 ${z_off}" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- Raked wedge nose - the visual signature of the low, fast scout -->
+  <xacro:macro name="wedge_nose" params="parent_link x_off z_off length width height material_name">
+    <link name="${parent_link}_nose_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0.45 0"/>
+        <geometry><box size="${length} ${width} ${height}"/></geometry>
+        <material name="${material_name}"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0.45 0"/>
+        <geometry><box size="${length} ${width} ${height}"/></geometry>
+      </collision>
+      <inertial>
+        <mass value="0.3"/>
+        <xacro:box_inertia mass="0.3" x="${length}" y="${width}" z="${height}"/>
+      </inertial>
+    </link>
+    <joint name="${parent_link}_nose_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${parent_link}_nose_link"/>
+      <origin xyz="${x_off} 0 ${z_off}" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- Thin rear light bar - scout's status-indicator accent -->
+  <xacro:macro name="led_bar" params="parent_link x_off z_off width material_name:=amr_cyan">
+    <link name="${parent_link}_led_link">
+      <visual>
+        <geometry><box size="0.03 ${width} 0.02"/></geometry>
+        <material name="${material_name}"/>
+      </visual>
+      <inertial>
+        <mass value="0.02"/>
+        <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+      </inertial>
+    </link>
+    <joint name="${parent_link}_led_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${parent_link}_led_link"/>
+      <origin xyz="${x_off} 0 ${z_off}" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+
+</robot>

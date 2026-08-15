@@ -1,0 +1,166 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:include filename="$(find amr_description)/urdf/common_properties.xacro"/>
+
+  <!--
+    Shared AMR chassis macro. AMR-1 and AMR-2 both instantiate this single
+    macro with different physical parameters AND a `robot_type` switch -
+    heterogeneity comes from configuration, not from copy-pasted URDF, but
+    the two roles still end up with genuinely different silhouettes:
+
+      Both roles share a 4-wheel stance modeled on the reference AGV photo:
+      big uniform wheels mounted proud of a low chassis on visible stub
+      arms, not tucked-under casters. Only the rear axle is actuated
+      (Ignition's DiffDrive plugin drives exactly 2 joints); the front axle
+      is a passive, low-friction idler pair of the same size, so the
+      silhouette reads as "4 real wheels" while the kinematics stay a
+      simple differential drive.
+
+      amr1 (Mapper/Lead, heavy tugger): a raised flat payload deck (pallet
+      sits directly on top, matching the reference AGV photo - no forks,
+      no mast) with a small beacon light. LiDAR is chassis-mounted, same
+      as amr2.
+
+      amr2 (Scout/Follower, light and fast): a raked wedge nose and a low
+      sensor pod - nothing raised, nothing carried, built to be quick
+      through the aisles.
+
+    Dynamic limits (max_linear_accel, max_angular_accel, max_linear_vel,
+    payload_capacity) are not enforced by URDF/Gazebo itself; they are
+    exported as robot_state_publisher parameters under
+    /<robot_name>/amr_limits so the motion-smoothing and traffic-control
+    nodes introduced in later stages can read them from one source of truth
+    (see config/amr_fleet_params.yaml).
+  -->
+  <xacro:macro name="amr_robot" params="
+      robot_name
+      robot_type
+      material_name
+      body_length body_width body_height
+      chassis_mass payload_capacity_kg
+      wheel_radius wheel_width wheel_separation wheel_base_x idler_base_x
+      max_linear_vel max_linear_accel max_angular_accel
+      lidar_range">
+
+    <xacro:property name="is_amr1" value="${robot_type == 'amr1'}"/>
+
+    <link name="${robot_name}/base_footprint"/>
+
+    <joint name="base_footprint_joint" type="fixed">
+      <parent link="${robot_name}/base_footprint"/>
+      <child link="${robot_name}/base_link"/>
+      <origin xyz="0 0 ${wheel_radius}" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${robot_name}/base_link">
+      <visual>
+        <origin xyz="0 0 ${body_height/2.0}" rpy="0 0 0"/>
+        <geometry><box size="${body_length} ${body_width} ${body_height}"/></geometry>
+        <material name="${material_name}"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${body_height/2.0}" rpy="0 0 0"/>
+        <geometry><box size="${body_length} ${body_width} ${body_height}"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 ${body_height/2.0}" rpy="0 0 0"/>
+        <mass value="${chassis_mass}"/>
+        <xacro:box_inertia mass="${chassis_mass}" x="${body_length}" y="${body_width}" z="${body_height}"/>
+      </inertial>
+    </link>
+
+    <!-- Rear axle: driven. Front axle: passive idler, same wheel size -
+         together a 4-wheel stance, each wheel proud of the chassis on a
+         visible stub arm (see wheel_arm below). -->
+    <xacro:drive_wheel prefix="${robot_name}/left" parent_link="${robot_name}/base_link"
+      x_off="${wheel_base_x}" y_off="${wheel_separation/2.0}"
+      wheel_radius="${wheel_radius}" wheel_width="${wheel_width}" wheel_mass="${chassis_mass*0.03}"
+      material_name="amr_dark"/>
+    <xacro:drive_wheel prefix="${robot_name}/right" parent_link="${robot_name}/base_link"
+      x_off="${wheel_base_x}" y_off="${-wheel_separation/2.0}"
+      wheel_radius="${wheel_radius}" wheel_width="${wheel_width}" wheel_mass="${chassis_mass*0.03}"
+      material_name="amr_dark"/>
+    <xacro:idler_wheel prefix="${robot_name}/front_left" parent_link="${robot_name}/base_link"
+      x_off="${idler_base_x}" y_off="${wheel_separation/2.0}"
+      wheel_radius="${wheel_radius}" wheel_width="${wheel_width}" wheel_mass="${chassis_mass*0.02}"
+      material_name="amr_dark"/>
+    <xacro:idler_wheel prefix="${robot_name}/front_right" parent_link="${robot_name}/base_link"
+      x_off="${idler_base_x}" y_off="${-wheel_separation/2.0}"
+      wheel_radius="${wheel_radius}" wheel_width="${wheel_width}" wheel_mass="${chassis_mass*0.02}"
+      material_name="amr_dark"/>
+
+    <!-- Stub arm brackets bridging the chassis sides to each wheel hub.
+         inner_mag is deliberately body_width/2 minus a 1cm overlap, not
+         exactly body_width/2: an arm's inner face sitting at *exactly* the
+         body box's own surface is a coincident/touching boundary, which
+         the renderer can't reliably resolve which face is in front of the
+         other and flickers between them. A small real overlap removes the
+         ambiguity outright. -->
+    <xacro:wheel_arm prefix="${robot_name}/rear_left" parent_link="${robot_name}/base_link"
+      x_off="${wheel_base_x}" side="1" inner_mag="${body_width/2.0 - 0.01}" outer_mag="${wheel_separation/2.0}" height="${wheel_radius*1.1}" thickness="${wheel_width*1.6}"/>
+    <xacro:wheel_arm prefix="${robot_name}/rear_right" parent_link="${robot_name}/base_link"
+      x_off="${wheel_base_x}" side="-1" inner_mag="${body_width/2.0 - 0.01}" outer_mag="${wheel_separation/2.0}" height="${wheel_radius*1.1}" thickness="${wheel_width*1.6}"/>
+    <xacro:wheel_arm prefix="${robot_name}/front_left" parent_link="${robot_name}/base_link"
+      x_off="${idler_base_x}" side="1" inner_mag="${body_width/2.0 - 0.01}" outer_mag="${wheel_separation/2.0}" height="${wheel_radius*1.1}" thickness="${wheel_width*1.6}"/>
+    <xacro:wheel_arm prefix="${robot_name}/front_right" parent_link="${robot_name}/base_link"
+      x_off="${idler_base_x}" side="-1" inner_mag="${body_width/2.0 - 0.01}" outer_mag="${wheel_separation/2.0}" height="${wheel_radius*1.1}" thickness="${wheel_width*1.6}"/>
+
+    <!-- ===================== Role-specific superstructure ===================== -->
+    <xacro:if value="${is_amr1}">
+      <!-- Heavy tugger: a flat raised deck the pallet sits directly on
+           (matches the reference AGV photo - no forks, no mast) plus a
+           small beacon light on top. -->
+      <xacro:payload_deck parent_link="${robot_name}/base_link"
+        length="${body_length*0.9}" width="${body_width*0.9}" z_off="${body_height + 0.02}"/>
+    </xacro:if>
+
+    <xacro:unless value="${is_amr1}">
+      <!-- Scout: raked wedge nose up front, rear status LED bar - low and
+           quick, nothing raised, nothing carried. -->
+      <xacro:wedge_nose parent_link="${robot_name}/base_link"
+        x_off="${body_length/2.0 - 0.03}" z_off="${body_height*0.55}"
+        length="0.16" width="${body_width*0.85}" height="${body_height*0.7}"
+        material_name="${material_name}"/>
+      <xacro:led_bar parent_link="${robot_name}/base_link"
+        x_off="${-body_length/2.0 + 0.02}" z_off="${body_height + 0.015}" width="${body_width*0.7}"/>
+    </xacro:unless>
+
+    <!-- Sensors: LiDAR chassis-mounted for both robots (no mast on
+         either). AMR-1's is raised a touch higher to clear the payload
+         deck it would otherwise poke through. IMU always at chassis
+         center. -->
+    <xacro:planar_lidar parent_link="${robot_name}/base_link"
+      x_off="${body_length*0.35}" y_off="0.0" z_off="${body_height + 0.03 + is_amr1*0.04}"
+      topic="/${robot_name}/scan" frame_id="${robot_name}/lidar_link"
+      min_range="0.10" max_range="${lidar_range}"/>
+
+    <xacro:imu_sensor parent_link="${robot_name}/base_link"
+      topic="/${robot_name}/imu" frame_id="${robot_name}/imu_link"/>
+
+    <!-- Differential-drive actuation (Ignition Gazebo system plugin) -->
+    <gazebo>
+      <plugin filename="ignition-gazebo-diff-drive-system" name="ignition::gazebo::systems::DiffDrive">
+        <left_joint>${robot_name}/left_wheel_joint</left_joint>
+        <right_joint>${robot_name}/right_wheel_joint</right_joint>
+        <wheel_separation>${wheel_separation}</wheel_separation>
+        <wheel_radius>${wheel_radius}</wheel_radius>
+        <max_linear_acceleration>${max_linear_accel}</max_linear_acceleration>
+        <min_linear_acceleration>${-max_linear_accel}</min_linear_acceleration>
+        <max_angular_acceleration>${max_angular_accel}</max_angular_acceleration>
+        <min_angular_acceleration>${-max_angular_accel}</min_angular_acceleration>
+        <max_linear_velocity>${max_linear_vel}</max_linear_velocity>
+        <min_linear_velocity>${-max_linear_vel}</min_linear_velocity>
+        <topic>/${robot_name}/cmd_vel</topic>
+        <odom_topic>/${robot_name}/odom</odom_topic>
+        <tf_topic>/${robot_name}/tf</tf_topic>
+        <frame_id>${robot_name}/odom</frame_id>
+        <child_frame_id>${robot_name}/base_footprint</child_frame_id>
+        <odom_publish_frequency>50</odom_publish_frequency>
+      </plugin>
+      <plugin filename="ignition-gazebo-joint-state-publisher-system" name="ignition::gazebo::systems::JointStatePublisher">
+        <topic>/${robot_name}/joint_states</topic>
+      </plugin>
+    </gazebo>
+
+  </xacro:macro>
+</robot>

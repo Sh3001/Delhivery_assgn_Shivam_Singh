@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!--
+  AMR-2 "Scout/Follower": speed and dynamic obstacle avoidance, lower
+  payload capacity, higher acceleration limits. Smaller/lighter chassis,
+  shorter-range LiDAR (local reactive use, not primary mapping), higher
+  dynamic limits than AMR-1.
+-->
+<robot name="amr2" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:include filename="$(find amr_description)/urdf/amr_macro.xacro"/>
+
+  <xacro:arg name="robot_name" default="amr2"/>
+
+  <xacro:amr_robot
+    robot_name="$(arg robot_name)"
+    robot_type="amr2"
+    material_name="amr_blue"
+    body_length="0.50" body_width="0.40" body_height="0.14"
+    chassis_mass="22.0" payload_capacity_kg="30.0"
+    wheel_radius="0.11" wheel_width="0.06"
+    wheel_separation="0.52" wheel_base_x="-0.10" idler_base_x="0.15"
+    max_linear_vel="1.4" max_linear_accel="1.0" max_angular_accel="2.5"
+    lidar_range="12.0"/>
+</robot>

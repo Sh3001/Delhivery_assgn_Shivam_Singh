@@ -1,0 +1,9 @@
+<library path="ramp_cost_layer">
+  <class type="amr_navigation::RampCostLayer" base_class_type="nav2_costmap_2d::Layer">
+    <description>
+      Stamps an elevated-but-traversable cost over configured ramp
+      footprints, so the global planner prefers flat routes and only
+      crosses a ramp when it's the only path to the goal.
+    </description>
+  </class>
+</library>

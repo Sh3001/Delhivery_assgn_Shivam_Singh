@@ -1,0 +1,24 @@
+
+amr1:
+  role: mapper_lead
+  chassis_mass_kg: 60.0
+  payload_capacity_kg: 150.0
+  max_linear_vel_mps: 0.8
+  max_linear_accel_mps2: 0.4
+  max_angular_accel_radps2: 1.2
+  max_jerk_mps3: 0.8
+  wheel_radius_m: 0.09
+  wheel_separation_m: 0.46
+  yield_priority: 1          # lower number = higher priority (never yields to a higher number)
+
+amr2:
+  role: scout_follower
+  chassis_mass_kg: 22.0
+  payload_capacity_kg: 30.0
+  max_linear_vel_mps: 1.4
+  max_linear_accel_mps2: 1.0
+  max_angular_accel_radps2: 2.5
+  max_jerk_mps3: 2.0
+  wheel_radius_m: 0.07
+  wheel_separation_m: 0.36
+  yield_priority: 2          # yields to amr1 in conflict scenarios

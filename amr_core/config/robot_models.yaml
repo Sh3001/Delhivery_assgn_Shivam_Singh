@@ -1,0 +1,76 @@
+
+heavy_tugger:
+  human_name: "AMR-1 Mapper/Lead"
+  role: "mapper"
+
+  chassis_length: 0.70
+  chassis_width: 0.50
+  footprint_radius: 0.50
+  inscribed_radius: 0.25
+  wheel_radius: 0.14
+
+  max_vel_x: 0.8
+  max_vel_theta: 1.0
+  max_accel_x: 0.4
+  max_decel_x: 0.4
+  max_accel_theta: 1.2
+  max_jerk_x: 0.6
+  max_jerk_theta: 2.0
+
+  payload_accel_scale: 0.6
+  payload_jerk_scale: 0.5
+  speed_jerk_gain: 0.5
+  payload_capacity_kg: 150.0
+
+  safety_k: 0.6
+  body_half_length: 0.35
+  safety_d_min: 0.65
+  safety_sector_half_angle_deg: 40.0
+  safety_scan_stale_sec: 0.5
+
+  yield_priority: 100
+
+  imu_max_angular_velocity: 2.0      # rad/s - heavier unit, turns slowly
+  imu_max_linear_acceleration: 4.0   # m/s^2
+  lidar_range_min: 0.10
+  lidar_range_max: 25.0
+  sensor_max_age_sec: 0.5
+
+
+light_scout:
+  human_name: "AMR-2 Scout/Follower"
+  role: "scout"
+
+  chassis_length: 0.50
+  chassis_width: 0.40
+  footprint_radius: 0.42
+  inscribed_radius: 0.20
+  wheel_radius: 0.10
+
+  max_vel_x: 1.4
+  max_vel_theta: 2.0
+  max_accel_x: 1.0
+  max_decel_x: 1.0
+  max_accel_theta: 2.5
+  max_jerk_x: 1.5
+  max_jerk_theta: 4.0
+
+  payload_accel_scale: 1.0
+  payload_jerk_scale: 1.0
+  speed_jerk_gain: 0.5
+  payload_capacity_kg: 30.0
+
+  safety_k: 0.4
+  body_half_length: 0.25
+  safety_d_min: 0.50
+  safety_sector_half_angle_deg: 40.0
+  safety_scan_stale_sec: 0.5
+
+  yield_priority: 50
+
+  imu_max_angular_velocity: 3.5      # rad/s
+  imu_max_linear_acceleration: 6.0   # m/s^2 proper (gravity compensated)
+  lidar_range_min: 0.10
+  lidar_range_max: 12.0
+  sensor_max_age_sec: 0.5
+

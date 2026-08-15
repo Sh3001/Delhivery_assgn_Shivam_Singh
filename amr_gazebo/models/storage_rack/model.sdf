@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="storage_rack">
+    <static>true</static>
+    <link name="link">
+      <!-- Single box collision sized to the real mesh's bounding box
+           (0.906 x 0.305 x 0.775 m) - cheap for physics, the visual
+           carries the real CAD detail. -->
+      <collision name="collision">
+        <pose>0 0 0.3875 0 0 0</pose>
+        <geometry><box><size>0.906 0.305 0.775</size></box></geometry>
+      </collision>
+
+      <visual name="legs">
+        <geometry><mesh><uri>meshes/rack_legs.stl</uri><scale>0.001 0.001 0.001</scale></mesh></geometry>
+        <material><ambient>0.55 0.56 0.58 1</ambient><diffuse>0.6 0.61 0.63 1</diffuse><specular>0.3 0.3 0.3 1</specular></material>
+      </visual>
+      <visual name="shelves">
+        <geometry><mesh><uri>meshes/rack_shelves.stl</uri><scale>0.001 0.001 0.001</scale></mesh></geometry>
+        <material><ambient>0.55 0.38 0.2 1</ambient><diffuse>0.6 0.42 0.22 1</diffuse><specular>0.1 0.1 0.1 1</specular></material>
+      </visual>
+    </link>
+  </model>
+</sdf>

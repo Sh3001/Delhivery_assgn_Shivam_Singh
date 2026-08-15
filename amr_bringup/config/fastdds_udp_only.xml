@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  FastDDS profile that disables the shared-memory transport and uses UDPv4
+  only, for every participant in this fleet.
+
+  Why: throughout bring-up this workspace repeatedly produced
+
+      RTPS_TRANSPORT_SHM Error] Failed init_port fastrtps_port7411:
+      open_and_lock_file failed -> Function open_port_internal
+
+  SHM ports are backed by lock files under /dev/shm. A hard-killed node (which
+  this project does a lot of, restarting the stack) leaves its segment behind
+  still locked; the next run's participant then fails to open that port. FastDDS
+  does not treat that as fatal - it carries on with a partially initialised
+  transport - which is what produced the signature failure here: a node whose
+  *services* were advertised and discoverable (`ros2 service list` showed
+  /amr2/waypoint_follower/change_state) while the node itself never appeared in
+  `ros2 node list` and a direct service call hung forever. Nav2's lifecycle
+  manager then blocked at "Configuring ..." or "Creating bond timer ..." and the
+  robot never came up.
+
+  UDPv4 loopback costs a little throughput versus SHM, but every topic here is
+  small (scans, odometry, occupancy grids at 1 Hz) and correctness matters more
+  than the copy. This also removes the need to scrub /dev/shm between runs.
+
+  Enable with:
+    export FASTRTPS_DEFAULT_PROFILES_FILE=<path to this file>
+  The fleet launch files set it automatically for the nodes they start.
+-->
+<dds xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <profiles>
+    <transport_descriptors>
+      <transport_descriptor>
+        <transport_id>udp_only_transport</transport_id>
+        <type>UDPv4</type>
+        <!-- comfortably above the largest message here (the merged
+             OccupancyGrid); undersizing this silently drops big samples -->
+        <maxMessageSize>65500</maxMessageSize>
+        <sendBufferSize>2097152</sendBufferSize>
+        <receiveBufferSize>2097152</receiveBufferSize>
+      </transport_descriptor>
+    </transport_descriptors>
+
+    <participant profile_name="udp_only_participant" is_default_profile="true">
+      <rtps>
+        <userTransports>
+          <transport_id>udp_only_transport</transport_id>
+        </userTransports>
+        <!-- the decisive line: do not add the built-in SHM/UDP pair on top -->
+        <useBuiltinTransports>false</useBuiltinTransports>
+      </rtps>
+    </participant>
+  </profiles>
+</dds>
