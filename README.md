@@ -150,19 +150,6 @@ ros2 launch amr_bringup task2.launch.py rviz:=true goals:=true perfect_localizat
 ros2 launch amr_bringup task3.launch.py rviz:=true goals:=true perfect_localization:=true
 ```
 
-Then, in a second terminal:
-
-```bash
-cd ~/delhivery_assgn && source ros2_ws/install/setup.bash
-
-python3 demos/scenario_a_motion_smoothing.py          # jerk/accel limits (offline)
-python3 demos/scenario_bc_conflict_and_yield.py       # conflict + priority yielding
-python3 demos/scenario_d_safety_override.py           # safety stop and recovery gate
-python3 demos/scenario_e_live_corridor_conflict.py    # both robots driving, ground truth
-python3 demos/measure_trajectory_smoothness.py 120    # path curvature, in-place rotation
-python3 demos/measure_obstacle_clearance.py 240       # clearance from dynamic obstacles
-```
-
 ### Task 4 — Sensor validation and fleet scalability
 
 ```bash
